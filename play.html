@@ -74,6 +74,21 @@ var id = getParameterByName("p").replace(/[\\\/]/,"");
 	goTo("START");
 }	
 
+function escapeHtmlEntities (str) {
+  if (typeof jQuery !== 'undefined') {
+    // Create an empty div to use as a container,
+    // then put the raw text in and get the HTML
+    // equivalent out.
+    return jQuery('<div/>').text(str).html();
+  }
+
+  // No jQuery, so use string replace.
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/>/g, '&gt;')
+    .replace(/</g, '&lt;')
+    .replace(/"/g, '&quot;');
+}
 
 function goTo(targetState){
 	var curstate = gameState[targetState];
@@ -81,10 +96,10 @@ function goTo(targetState){
 	var str = "";
 	for (var i=0;i<curstate.length;i++){
 		var l = curstate[i];
-		if (l.length==1){
-			str+=l[0]+"<br>";
+		if (l.length==1){			
+			str+=escapeHtmlEntities(l[0])+"<br>";
 		} else if (l.length==2){
-			str+='<a href="#" onclick="goTo(\''+l[1]+'\');return false;">'+l[0]+'</a><br>';
+			str+='<a href="#" onclick="goTo(\''+escapeHtmlEntities(l[1])+'\');return false;">'+escapeHtmlEntities(l[0])+'</a><br>';
 		}	
 	}
 	gameArea.innerHTML=str;
