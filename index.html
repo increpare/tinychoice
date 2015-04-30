@@ -1,0 +1,232 @@
+<html>
+<head>
+<title>multichoice</title>
+<script src="FileSaver.js"></script>
+<script>
+
+function doShare() {
+  var title = gameTitle;
+  var str = doCompile();
+
+  var editor = document.getElementById("editor");
+  var sourceCode = editor.value;
+
+  var gistToCreate = {
+    "description" : title,
+    "public" : true,
+    "files": {
+      "readme.txt" : {
+        "content": "A game made with www.multichoice.org"
+      },
+      "game.txt" : {
+        "content": str
+      },
+      "sourceCode.txt" : {
+        "content": sourceCode      	
+      }
+    }
+  };
+
+  var githubURL = 'https://api.github.com/gists';
+  var githubHTTPClient = new XMLHttpRequest();
+  githubHTTPClient.open('POST', githubURL);
+  githubHTTPClient.onreadystatechange = function() {    
+    var errorCount=0;
+    if(githubHTTPClient.readyState!=4) {
+      return;
+    }   
+    var result = JSON.parse(githubHTTPClient.responseText);
+    if (githubHTTPClient.status===403) {
+      errorCount++;
+      alert(result.message);
+    } else if (githubHTTPClient.status!==200&&githubHTTPClient.status!==201) {
+      errorCount++;
+      alert("HTTP Error "+ githubHTTPClient.status + ' - ' + githubHTTPClient.statusText);
+    } else {
+      var id = result.id;
+      var playUrl = "play.html?p="+id;
+      playUrl=qualifyURL(playUrl);
+      var editUrl = "index.html?p="+id;
+      editUrl=qualifyURL(editUrl);
+
+      var shareLink = document.getElementById("shareLinkArea");
+      shareLink.innerHTML = "<a target=\"_blank\" href=\""+playUrl+"\">"+playUrl+"</a><br><a target=\"_blank\" href=\""+editUrl+"\">"+editUrl+"</a><br>";
+
+
+      if (errorCount>0) {
+        alert("Cannot link directly to playable game, because there are errors.",true);
+      } else {
+
+      } 
+
+
+    }
+  }
+  githubHTTPClient.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+  var stringifiedGist = JSON.stringify(gistToCreate);
+  githubHTTPClient.send(stringifiedGist);
+    lastDownTarget=canvas;  
+}
+
+var standalone_HTML_String="";
+
+var clientStandaloneRequest = new XMLHttpRequest();
+
+clientStandaloneRequest.open('GET', 'play.html');
+clientStandaloneRequest.onreadystatechange = function() {
+
+    if(clientStandaloneRequest.readyState!=4) {
+      return;
+    }
+    standalone_HTML_String=clientStandaloneRequest.responseText;
+}
+clientStandaloneRequest.send();
+
+
+var get_blob = function() {
+    return self.Blob;
+}
+
+function doEmbed() {
+  if (standalone_HTML_String.length===0) {
+    alert("Can't export yet - still downloading html template.",true);
+    return;
+  }
+
+  var sourceCode=doCompile();  
+  sourceCode=encodeURI(sourceCode);
+  var htmlString = standalone_HTML_String.concat("");
+
+
+  htmlString = htmlString.replace(/__EMBED__/g,sourceCode);
+  htmlString="<!--save as html file-->\n"+htmlString;
+  var BB = get_blob();
+  var blob = new BB([htmlString], {type: "text/plain;charset=utf-8"});
+  saveAs(blob, "game.html");
+}
+
+function exportClick(){
+  var embedDat = stateToString();
+  buildStandalone(embedDat);
+}
+
+
+
+
+var aurl = document.createElement('a');
+function qualifyURL(url) {
+ aurl.href = url;
+ return aurl.href;
+}
+
+function getParameterByName(name) {
+    name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+    return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
+
+
+function strip_http(url) {
+   url = url.replace(/^https?:\/\//,'');
+   return url;
+}
+
+
+function init(){
+
+	var id = getParameterByName("p").replace(/[\\\/]/,"");
+  if (id===null||id.length===0) {
+    console.log("No ID specified in URL.")
+    return;
+  }
+
+  var githubURL = 'https://api.github.com/gists/'+id;
+
+  var githubHTTPClient = new XMLHttpRequest();
+  githubHTTPClient.open('GET', githubURL);
+  githubHTTPClient.onreadystatechange = function() {
+    if(githubHTTPClient.readyState!=4) {
+      return;
+    }   
+    var result = JSON.parse(githubHTTPClient.responseText);
+    if (githubHTTPClient.status===403) {
+      console.log(result.message);
+    } else if (githubHTTPClient.status!==200&&githubHTTPClient.status!==201) {
+      console.log("HTTP Error "+ githubHTTPClient.status + ' - ' + githubHTTPClient.statusText);
+    }
+    var result = JSON.parse(githubHTTPClient.responseText);
+    var code=result["files"]["sourceCode.txt"]["content"];
+    console.log(code);
+
+
+	var editor = document.getElementById("editor");
+	editor.value=code;
+	goTo("START");
+  }
+  githubHTTPClient.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+  githubHTTPClient.send();
+
+	goTo("START");
+}	
+
+function doCompile(){
+	var editor = document.getElementById("editor");
+	var text = editor.value;
+	var lines = text.split("\n");
+	var lines2 = new Array();
+	for (var i=0;i<lines.length;i++){
+		var l = lines[i];
+		l = l.trim();
+		lines2.push(l);
+	}
+	var section = new Object();
+	
+	var cursection="";
+	for (var i=0;i<lines2.length;i++){
+		var l = lines2[i];
+		if (l.length===0){
+			if (cursection!=="" && section[cursection].length>0){
+				section[cursection].push([""]);
+			}
+		} else if (l[0]==='='&&l[l.length-1]==='='){
+			cursection=l.substr(1,l.length-2).toUpperCase();
+			section[cursection]=[];					
+		} else if (cursection.length>0 && l.indexOf("->")>=0){
+			var index = l.indexOf("->");
+			var a = l.substr(0,index-1).trim();
+			var b = l.substr(index+2).trim().toUpperCase();
+			section[cursection].push([a,b]);
+		} else if (cursection.length>0){
+			section[cursection].push([l]);
+		}
+	}
+	var dat_str = JSON.stringify(section);
+	
+	return dat_str;
+}
+</script>
+</head>
+<body onload="init();">
+<textarea name="boop" id="editor" rows=20 cols=80>=START=
+
+how do you feel about it?
+
+good -> scene2
+bad -> scene3
+
+=SCENE2=
+
+are you sure?
+
+yes -> scene2
+no -> start
+
+=SCENE3=
+
+oh no :(</textarea><br>
+<a href="#" onclick="doShare(); return false;">share</a><br>
+<div id="shareLinkArea"></div>
+<a href="#" onclick="doEmbed(); return false;">embed</a>
+</body>
+</html>
