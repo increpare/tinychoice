@@ -208,23 +208,34 @@ function doCompile(){
 </script>
 </head>
 <body onload="init();">
-<textarea name="boop" id="editor" rows=20 cols=80>=START=
+<textarea name="boop" id="editor" rows=20 cols=80>==START=
 
-how do you feel about it?
+You stand between a field of sheep and a field of cows.
 
-good -> scene2
-bad -> scene3
+Go to the cows -> cowfield
+Go to the sheep -> sheepfield
 
-=SCENE2=
+=COWFIELD=
 
-are you sure?
+Cows are rolling about.
 
-yes -> scene2
-no -> start
+Roll with the cows. -> cowfield2
+Get out of this weird place -> start
 
-=SCENE3=
+=COWFIELD2=
 
-oh no :(</textarea><br>
+You roll around for a bit, but you don't feel that you really fit in here.
+
+=SHEEPFIELD=
+
+Sheep are jumping up and down
+
+Jump with the sheep. up and down. -> sheepfield2
+Get out of this crazy place -> start
+
+=SHEEPFIELD2=
+
+You jump up and down, just like the sheep, but however hard and long you try they still look at you differently.</textarea><br>
 <a href="#" onclick="doShare(); return false;">share</a><br>
 <div id="shareLinkArea"></div>
 <a href="#" onclick="doEmbed(); return false;">embed</a>
