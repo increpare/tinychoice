@@ -1,6 +1,9 @@
 <html>
 <head>
-<title>multichoice</title>
+<link rel="icon" 
+      type="image/png" 
+      href="favicon.png">
+<title>tinychoice</title>
 <script src="FileSaver.js"></script>
 <script>
 
@@ -49,7 +52,7 @@ function doShare() {
       editUrl=qualifyURL(editUrl);
 
       var shareLink = document.getElementById("shareLinkArea");
-      shareLink.innerHTML = "<a target=\"_blank\" href=\""+playUrl+"\">"+playUrl+"</a><br><a target=\"_blank\" href=\""+editUrl+"\">"+editUrl+"</a><br>";
+      shareLink.innerHTML = "<ul><li><a target=\"_blank\" href=\""+playUrl+"\">"+playUrl+"</a></li><li><a target=\"_blank\" href=\""+editUrl+"\">"+editUrl+"</a><br></li></ul>";
 
 
       if (errorCount>0) {
