@@ -1,4 +1,5 @@
 http://www.tinychoice.net	
+tiny multiple-choice scripting language with online sharing as well as standalone export.
 
 The MIT License (MIT)
 
