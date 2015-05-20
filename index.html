@@ -1,4 +1,4 @@
-<html>
+<html dir="auto" >
 <head>
 <link rel="icon" 
       type="image/png" 
@@ -61,6 +61,7 @@ function doShare() {
 
       } 
 
+      window.history.pushState({}, "tinychoice", "index.html?p="+id);
 
     }
   }
@@ -163,12 +164,9 @@ function init(){
 
 	var editor = document.getElementById("editor");
 	editor.value=code;
-	goTo("START");
   }
   githubHTTPClient.setRequestHeader("Content-type","application/x-www-form-urlencoded");
   githubHTTPClient.send();
-
-	goTo("START");
 }	
 
 function doCompile(){
@@ -183,7 +181,10 @@ function doCompile(){
 	}
 	var section = new Object();
 	
-	var cursection="";
+  var sectionCount=0;
+	var cursection="START";
+  section[cursection]=[];
+
 	for (var i=0;i<lines2.length;i++){
 		var l = lines2[i];
 		if (l.length===0){
@@ -192,7 +193,11 @@ function doCompile(){
 			}
 		} else if (l[0]==='='&&l[l.length-1]==='='){
 			cursection=l.substr(1,l.length-2).toUpperCase();
-			section[cursection]=[];					
+			section[cursection]=[];	      
+      sectionCount++;				
+      if (sectionCount===1){
+        section["__STARTSECTION__"]=cursection;
+      }
 		} else if (cursection.length>0 && l.indexOf("->")>=0){
 			var index = l.indexOf("->");
 			var a = l.substr(0,index-1).trim();
@@ -208,8 +213,8 @@ function doCompile(){
 }
 </script>
 </head>
-<body onload="init();">
-<textarea name="boop" id="editor" rows=20 cols=80>=START=
+<body onload="init();" dir="auto">
+<textarea name="boop" id="editor" dir="auto" rows=20 cols=80>=START=
 
 You stand between a field of sheep and a field of cows.
 

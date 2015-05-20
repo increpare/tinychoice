@@ -1,4 +1,4 @@
-<html>
+<html  dir="auto" >
 <head>
 <link rel="icon" 
       type="image/png" 
@@ -30,17 +30,31 @@ function getParameterByName(name) {
     return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
-
 function strip_http(url) {
    url = url.replace(/^https?:\/\//,'');
    return url;
+}
+
+function startSection(){
+  if (gameState==null){
+    return "";
+  }
+  var param = getParameterByName("section");
+
+  var result = "__STARTSECTION__" in gameState ? gameState["__STARTSECTION__"] : "START";
+  if (param.length>0){
+    result=param;
+  }
+
+  return result;
 }
 
 function init(){
 	if (embedDat.length>0 && embedDat[0]!=='_'){
 		var dat = decodeURI(embedDat);
 		gameState = JSON.parse(dat);
-		goTo("START");
+    var startKey = startSection();
+		goTo(startKey);
 		return;
 	}
 
@@ -69,12 +83,12 @@ var id = getParameterByName("p").replace(/[\\\/]/,"");
     console.log(code);
 
 	gameState = JSON.parse(code);
-	goTo("START");
+	goTo(startSection());
   }
   githubHTTPClient.setRequestHeader("Content-type","application/x-www-form-urlencoded");
   githubHTTPClient.send();
 
-	goTo("START");
+	goTo(startSection());
 }	
 
 function escapeHtmlEntities (str) {
@@ -94,6 +108,9 @@ function escapeHtmlEntities (str) {
 }
 
 function goTo(targetState){
+  if (gameState==null){
+    return;
+  }
 	var curstate = gameState[targetState];
 	var gameArea = document.getElementById("gameArea");
 	var str = "";
@@ -110,7 +127,7 @@ function goTo(targetState){
 
 </script>
 </head>
-<body onload="init();">
-<div id="gameArea"></div>
+<body onload="init();" dir="auto">
+<div id="gameArea" ></div>
 </body>
 </html>
