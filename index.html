@@ -625,8 +625,7 @@ void loop() {
   }
   if (arduboy.pressed(DOWN_BUTTON)){
     word lines = pgm_read_word_near(textlinecounts+currentPage);
-    word maxoffset = lines-6;
-    if (yoffset<maxoffset){
+    if (yoffset+6<lines){
       yoffset++;
       change=true;
     } 
@@ -639,7 +638,7 @@ void loop() {
   }
   if (arduboy.justPressed(RIGHT_BUTTON)){
     word verbcount = pgm_read_word_near(verbcounts+currentPage);
-    if (currentVerb<verbcount-1){
+    if (verbcount>0&&(currentVerb+1<verbcount)){
       currentVerb++;
       change=true;
     }
