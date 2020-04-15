@@ -1,0 +1,765 @@
+<html dir="auto" >
+<head>
+<link rel="icon" 
+      type="image/png" 
+      href="favicon.png">
+<title>tinychoice</title>
+<style type="text/css">
+	@font-face {
+  		font-family: "linja pona";
+  		src: url("fonts/linja-pona-4.1.otf") format('opentype'), 
+       		 url('fonts/linja-pona-4.1.woff') format('woff');
+  }
+
+  body{
+  	font-family: "linja pona";
+  	font-size:150%;
+  }
+  textarea{
+	font-family: "linja pona"  ;
+  	font-size:150%;
+  }
+  #errorArea {
+    color:darkred
+  }
+</style>
+<script src="FileSaver.js"></script>
+<script>
+
+
+
+OAUTH_CLIENT_ID = "67b8e984088d91ffa277";
+
+
+function getAuthURL(){
+  var randomState = window.btoa(Array.prototype.map.call(
+    window.crypto.getRandomValues(new Uint8Array(24)),
+    function(x) { return String.fromCharCode(x); }).join(""));
+
+  var authUrl = "https://github.com/login/oauth/authorize"
+    + "?client_id=" + OAUTH_CLIENT_ID
+    + "&scope=gist"
+    + "&state=" + randomState
+    + "&allow_signup=true";
+
+  return authUrl;
+}
+
+function printUnauthorized(){
+
+  var authUrl = getAuthURL();
+  var toPrint = "<a target=\"_blank\" href=\"" + authUrl + "\">Log in with Github to share</a><br>";
+
+    var shareLink = document.getElementById("shareLinkArea");
+    shareLink.innerHTML = toPrint;
+    shareLinkInner=null;
+}
+
+
+
+function githubLogOut(){
+  window.localStorage.removeItem("oauth_access_token");
+  var authUrl = getAuthURL();
+  var toPrint = "Logged out of Github.<br>";
+  var shareLink = document.getElementById("shareLinkArea");
+  shareLink.innerHTML = toPrint;
+  shareLinkInner=null;
+}
+
+function doShare() {
+
+  var oauthAccessToken = window.localStorage.getItem("oauth_access_token");
+  if (typeof oauthAccessToken !== "string") {
+    // Generates 32 letters of random data, like "liVsr/e+luK9tC02fUob75zEKaL4VpQn".
+    printUnauthorized();
+    return;
+  }
+
+  var str = doCompile();
+
+  var editor = document.getElementById("editor");
+  var sourceCode = editor.value;
+
+  var gistToCreate = {
+    "description" : "tinychoice game",
+    "public" : true,
+    "files": {
+      "readme.txt" : {
+        "content": "A game made with tinychoice.org. Just go there and paste it in to try it out :)"
+      },
+      "game.txt" : {
+        "content": str
+      },
+      "sourceCode.txt" : {
+        "content": sourceCode      	
+      }
+    }
+  };
+
+  var githubURL = 'https://api.github.com/gists?access_token=' + oauthAccessToken;
+  var githubHTTPClient = new XMLHttpRequest();
+  githubHTTPClient.open('POST', githubURL);
+  githubHTTPClient.onreadystatechange = function() {    
+    var errorCount=0;
+    if(githubHTTPClient.readyState!=4) {
+      return;
+    }   
+    var result = JSON.parse(githubHTTPClient.responseText);
+    if (githubHTTPClient.status===403) {
+      errorCount++;
+      alert(result.message);
+    } else if (githubHTTPClient.status!==200&&githubHTTPClient.status!==201) {
+
+      if (githubHTTPClient.statusText==="Unauthorized"){      
+        alert("Authorization check failed.  You have to log back into GitHub (or give it permission again or something).");
+        window.localStorage.removeItem("oauth_access_token");
+      } else {
+        alert("HTTP Error "+ githubHTTPClient.status + ' - ' + githubHTTPClient.  statusText);
+      }
+
+      printUnauthorized();
+    } else {
+      var id = result.id;
+      var playUrl = "play_sitelen_pona.html?p="+id;
+      playUrl=qualifyURL(playUrl);
+      var editUrl = "index_sitelen_pona.html?p="+id;
+      editUrl=qualifyURL(editUrl);
+
+      var shareLink = document.getElementById("shareLinkArea");
+      shareLink.innerHTML = "<ul><li><a target=\"_blank\" href=\""+playUrl+"\">"+playUrl+"</a></li><li><a target=\"_blank\" href=\""+editUrl+"\">"+editUrl+"</a><br></li></ul>";
+
+
+      if (errorCount>0) {
+        alert("Cannot link directly to playable game, because there are errors.",true);
+      } else {
+
+      } 
+
+      window.history.pushState({}, "tinychoice", "index.html?p="+id);
+
+    }
+  }
+  githubHTTPClient.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+  var stringifiedGist = JSON.stringify(gistToCreate);
+  githubHTTPClient.send(stringifiedGist);
+}
+
+var standalone_HTML_String="";
+
+var clientStandaloneRequest = new XMLHttpRequest();
+
+clientStandaloneRequest.open('GET', 'play.html');
+clientStandaloneRequest.onreadystatechange = function() {
+
+    if(clientStandaloneRequest.readyState!=4) {
+      return;
+    }
+    standalone_HTML_String=clientStandaloneRequest.responseText;
+}
+clientStandaloneRequest.send();
+
+
+var get_blob = function() {
+    return self.Blob;
+}
+
+function doEmbed() {
+  if (standalone_HTML_String.length===0) {
+    alert("Can't export yet - still downloading html template.",true);
+    return;
+  }
+
+  var sourceCode=doCompile();  
+  sourceCode=encodeURI(sourceCode);
+  var htmlString = standalone_HTML_String.concat("");
+
+
+  htmlString = htmlString.replace(/__EMBED__/g,sourceCode);
+  htmlString="<!--save as html file-->\n"+htmlString;
+  var BB = get_blob();
+  var blob = new BB([htmlString], {type: "text/plain;charset=utf-8"});
+  saveAs(blob, "game.html");
+}
+
+
+function exportClick(){
+  var embedDat = stateToString();
+  buildStandalone(embedDat);
+}
+
+
+
+
+var aurl = document.createElement('a');
+function qualifyURL(url) {
+ aurl.href = url;
+ return aurl.href;
+}
+
+function getParameterByName(name) {
+    name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+    return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
+
+
+function strip_http(url) {
+   url = url.replace(/^https?:\/\//,'');
+   return url;
+}
+
+
+function init(){
+
+	var id = getParameterByName("p").replace(/[\\\/]/,"");
+  if (id===null||id.length===0) {
+    console.log("No ID specified in URL.")
+    return;
+  }
+
+  var githubURL = 'https://api.github.com/gists/'+id;
+
+  var githubHTTPClient = new XMLHttpRequest();
+  githubHTTPClient.open('GET', githubURL);
+  githubHTTPClient.onreadystatechange = function() {
+    if(githubHTTPClient.readyState!=4) {
+      return;
+    }   
+    var result = JSON.parse(githubHTTPClient.responseText);
+    if (githubHTTPClient.status===403) {
+      console.log(result.message);
+    } else if (githubHTTPClient.status!==200&&githubHTTPClient.status!==201) {
+      console.log("HTTP Error "+ githubHTTPClient.status + ' - ' + githubHTTPClient.statusText);
+    }
+    var result = JSON.parse(githubHTTPClient.responseText);
+    var code=result["files"]["sourceCode.txt"]["content"];
+    console.log(code);
+
+
+	var editor = document.getElementById("editor");
+	editor.value=code;
+  }
+  githubHTTPClient.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+  githubHTTPClient.send();
+}	
+
+function doCompile(){
+  clearErrors();
+  var editor = document.getElementById("editor");
+  var text = editor.value;
+  var lines = text.split("\n");
+  var lines2 = new Array();
+  for (var i=0;i<lines.length;i++){
+    var l = lines[i];
+    l = l.trim();
+    lines2.push(l);
+  }
+  var section = new Object();
+  
+  var sectionCount=0;
+  var cursection="START";
+  section[cursection]=[];
+
+  for (var i=0;i<lines2.length;i++){
+    var l = lines2[i];
+    if (l.length===0){
+      if (cursection!=="" && section[cursection].length>0){
+        section[cursection].push([""]);
+      }
+    } else if (l[0]==='='&&l[l.length-1]==='='){
+      cursection=l.substr(1,l.length-2).toUpperCase();
+      section[cursection]=[];       
+      sectionCount++;       
+      if (sectionCount===1){
+        section["__STARTSECTION__"]=cursection;
+      }
+    } else if (cursection.length>0 && l.indexOf("->")>=0){
+      var index = l.indexOf("->");
+      var a = l.substr(0,index-1).trim();
+      var b = l.substr(index+2).trim().toUpperCase();
+      section[cursection].push([a,b]);
+    } else if (cursection.length>0){
+      section[cursection].push([l]);
+    }
+  }
+  var dat_str = JSON.stringify(section);
+  
+  return dat_str;
+}
+
+function testWhite(x) {
+    var white = new RegExp(/^\s$/);
+    return white.test(x.charAt(0));
+};
+
+function wordWrap(str, maxWidth) {
+    var newLineStr = "\n"; done = false; res = [];
+    do {                    
+        found = false;
+        // Inserts new line at first whitespace of the line
+        for (i = maxWidth - 1; i >= 0; i--) {
+            if (testWhite(str.charAt(i))) {
+                res.push([str.slice(0, i), newLineStr].join(''));
+                str = str.slice(i + 1);
+                found = true;
+                break;
+            }
+        }
+        // Inserts new line at maxWidth position, the word is too long to wrap
+        if (!found) {
+            res.push([str.slice(0, maxWidth), newLineStr].join(''));
+            str = str.slice(maxWidth);
+        }
+
+        if (str.length < maxWidth)
+            done = true;
+    } while (!done);
+
+    return res;
+}
+
+function wrapByRegex(s,n) {
+        return s.match(
+                RegExp('.{1,' + n + '}(\\s|$)', 'g')
+            );
+}
+
+function logError(s){
+  var errorArea = document.getElementById("errorArea");
+  errorArea.innerHTML+=`${s}<br>`
+  console.log(s);
+}
+function clearErrors(){
+  var errorArea = document.getElementById("errorArea");
+  errorArea.innerHTML="";
+}
+
+function doEmbeddedCompile(){
+  clearErrors();
+  var editor = document.getElementById("editor");
+  var text = editor.value;
+  var lines = text.split("\n");
+  var lines2 = new Array();
+  for (var i=0;i<lines.length;i++){
+    var l = lines[i];
+    l = l.trim();
+    lines2.push(l);
+  }
+  var section = new Object();
+  
+  var sectionCount=0;
+  var cursection="START";
+  section[cursection]=[];
+
+  var sectionnames=[];
+  var startSection="";
+
+  for (var i=0;i<lines2.length;i++){
+    var l = lines2[i];
+    if (l.length===0){
+      if (cursection!=="" && section[cursection].length>0){
+        section[cursection].push([""]);
+      }
+    } else if (l[0]==='='&&l[l.length-1]==='='){
+      cursection=l.substr(1,l.length-2).toUpperCase();
+      section[cursection]=[];   
+      sectionnames.push(cursection);    
+      sectionCount++;       
+      if (sectionCount===1){
+        section["__STARTSECTION__"]=cursection;
+        startSection=cursection;
+      }
+    } else if (cursection.length>0 && l.indexOf("->")>=0){
+      var index = l.indexOf("->");
+      var a = l.substr(0,index-1).trim();
+      var b = l.substr(index+2).trim().toUpperCase();
+      section[cursection].push([a,b]);
+    } else if (cursection.length>0){
+      section[cursection].push([l]);
+    }
+  }
+
+  var textlinecounts=[];
+  var verbcounts=[];
+
+  var texts=[];
+  var verblists=[];
+  var verbtargetlists=[]
+
+  for (var i=0;i<sectionnames.length;i++){
+    var sn = sectionnames[i];
+    var sect = section[sn];
+
+    var text=[];
+    var verblist=[];
+    var verbtargetlist=[];
+    for (var j=0;j<sect.length;j++){      
+      var l = sect[j];
+      if(l.length===1){
+        var textlines = wrapByRegex(l[0],21);
+        if (textlines==null){
+          textlines=[""];
+        }
+        for (var k=0;k<textlines.length;k++){
+          text.push(textlines[k].trimRight());        
+        }
+      } else {
+        verblist.push(l[0]);
+        var targetIndex = sectionnames.indexOf(l[1]);
+        if (targetIndex==-1){
+          targetIndex=i;
+        }
+        verbtargetlist.push(targetIndex);
+      }
+    }
+
+    for (var j=text.length-1;j>=0;j--){
+      var l = text[j];
+      l=l.trim();
+      if (l.length>0){
+        break;
+      } else {
+        text.pop();
+      }
+    }
+    textlinecounts.push(text.length);
+    verbcounts.push(verblist.length);
+    texts.push(text);
+    verblists.push(verblist);
+    verbtargetlists.push(verbtargetlist);
+  }
+
+  var errors="";
+
+  var s = ""
+
+  s += "// Save as a .ino file and upload from the Arduino IDE to play on your arduboy.\n\n";
+
+  s += "// Made with www.tinychoice.net :)\n\n";
+
+  s+=arduHeader;
+
+  s+=`#define MAX_STR_LEN 30\n`;
+
+  s+=`const PROGMEM word sectionCount = ${texts.length};\n`;
+
+  s+=`const PROGMEM word textlinecounts[] = { `;
+  for (var i=0;i<textlinecounts.length;i++){
+    s+=textlinecounts[i]
+    if (i<textlinecounts.length-1){
+      s+=", "
+    }
+  }
+  s+=" };\n"
+
+  s+=`const PROGMEM word verbcounts[] = { `;
+  for (var i=0;i<verbcounts.length;i++){
+    s+=verbcounts[i]
+    if (i<verbcounts.length-1){
+      s+=", "
+    }
+  }
+  s+=" };\n"
+
+  for (var i=0;i<texts.length;i++){
+    var text = texts[i];
+    for (var j=0;j<text.length;j++){
+      s+=`const PROGMEM char text_${i}_${j}[]=${JSON.stringify(text[j])};\n`
+    }
+
+    s+=`const PROGMEM char * const(text_${i}[]) = { `
+    for (var j=0;j<text.length;j++){
+      s+=`text_${i}_${j}`
+      if (j<text.length-1){
+        s+=", "
+      }
+    }
+    s+=" };\n"
+  }
+
+  s+=`const PROGMEM char * const(* const (texts[])) = { `
+  for (var i=0;i<texts.length;i++){
+    s+=`text_${i}`
+    if (i<texts.length-1){
+      s+=", "
+    }
+  }
+  s+=" };\n"
+
+  for (var i=0;i<verblists.length;i++){
+    var verblist = verblists[i];
+    for (var j=0;j<verblist.length;j++){
+      var v = verblist[j];
+      if (v.length>19){
+        var e = `error: length of string "${v}" is too long for the Arduboy to display. Truncating to "${v.substr(0,19)}".`;
+        errors+="// "+e+"\n";
+        logError(e);
+        v=v.substr(0,19);
+      }
+      if (v.length<18){
+        v= " " + v + " ";
+      }
+      if (j>0){
+        v="<"+v;
+      } else {
+        v=" "+v;
+      }
+      if (j+1<verblist.length){
+        v = v+">"
+      } else {
+        v= v+" "
+      }
+
+      s+=`const PROGMEM char verb_${i}_${j}[]=${JSON.stringify(v)};\n`
+    }
+
+    s+=`const PROGMEM char * const(verblist_${i}[]) = { `
+    for (var j=0;j<verblist.length;j++){
+      s+=`verb_${i}_${j}`
+      if (j<verblist.length-1){
+        s+=", "
+      }
+    }
+    s+=" };\n"
+  }
+
+
+  s+=`const PROGMEM char * const(* const (verblists[])) = { `
+  for (var i=0;i<texts.length;i++){
+    s+=`verblist_${i}`
+    if (i<texts.length-1){
+      s+=", "
+    }
+  }
+  s+=" };\n"
+
+  for (var i=0;i<verbtargetlists.length;i++){
+    var verbtargetlist = verbtargetlists[i];
+
+    s+=`const PROGMEM word verbtargetlist_${i}[] = { `
+    for (var j=0;j<verbtargetlist.length;j++){
+      s+=`${verbtargetlist[j]}`
+      if (j<verbtargetlist.length-1){
+        s+=", "
+      }
+    }
+    s+=" };\n"
+  }
+
+
+  s+=`const PROGMEM word *const (verbtargetlists[]) = { `
+  for (var i=0;i<texts.length;i++){
+    s+=`verbtargetlist_${i}`
+    if (i<texts.length-1){
+      s+=", "
+    }
+  }
+  s+=" };\n"
+
+  s+=`
+// make an instance of arduboy used for many functions
+Arduboy2 arduboy;
+
+char buffer[MAX_STR_LEN];
+
+size_t currentVerb=0;
+size_t currentPage=0;
+byte yoffset=0;
+
+
+// This function runs once in your game.
+// use it for anything that needs to be set only once in your game.
+void setup() {
+  Serial.begin(9600);
+  // initiate arduboy instance
+  arduboy.boot();
+
+  // here we set the framerate to 15, we do not need to run at
+  // default 60 and it saves us battery life
+  arduboy.setFrameRate(10);
+  render();
+}
+
+
+void render(){
+// first we clear our screen to black
+  arduboy.clear();
+
+  word lines = pgm_read_word_near(textlinecounts+currentPage);
+  char linestoshow = 6;
+  if (lines<linestoshow){
+    linestoshow=lines;
+  }
+  const char* const * text = pgm_read_word_near(texts+currentPage);
+  for (int i=0;i<linestoshow;i++){
+    strcpy_P(buffer, (char*)pgm_read_word(&text[i+yoffset])); // Necessary casts and dereferencing, just copy.
+    arduboy.setCursor( 0,i*9);
+    arduboy.print(buffer);
+  }
+
+  arduboy.fillRect(0,64-10,128,1,WHITE);
+
+  word verbcount = pgm_read_word_near(verbcounts+currentPage);
+  if (verbcount>0){
+    const char* const * verblist = pgm_read_word_near(verblists+currentPage);
+    strcpy_P(buffer, (char*)pgm_read_word(&verblist[currentVerb])); // Necessary casts and dereferencing, just copy.
+    byte verb_length = strlen(buffer);
+
+    char xoffset = 128/2-verb_length*6/2;
+    arduboy.setCursor( xoffset,64-8);
+    arduboy.print(buffer);
+  }
+
+  word h = 54;
+  word linesPerPage = 6;
+
+  if (lines>linesPerPage){    
+    word scrollBarSize = (h*linesPerPage)/lines;
+    word maxOffset = lines-6;
+    word maxScrollbarY = 53-scrollBarSize;
+    arduboy.fillRect(128-2,(maxScrollbarY*yoffset)/maxOffset,2,scrollBarSize,WHITE);
+  }
+
+  // then we finaly we tell the arduboy to display what we just wrote to the display
+  arduboy.display();
+}
+
+bool nothingHappened(){
+  return !(
+          arduboy.pressed(UP_BUTTON) ||
+          arduboy.pressed(DOWN_BUTTON) ||
+          arduboy.justPressed(LEFT_BUTTON) ||
+          arduboy.justPressed(RIGHT_BUTTON) ||
+          arduboy.justPressed(A_BUTTON) ||
+          arduboy.justPressed(B_BUTTON) //||
+          // arduboy.justReleased(UP_BUTTON) ||
+          // arduboy.justReleased(DOWN_BUTTON) ||
+          // arduboy.justReleased(LEFT_BUTTON) ||
+          // arduboy.justReleased(RIGHT_BUTTON) ||
+          // arduboy.justReleased(A_BUTTON) ||
+          // arduboy.justReleased(B_BUTTON)
+          );
+}
+
+void reset(){
+  currentPage=0;
+  currentVerb=0;
+  yoffset=0;
+}
+
+void pressAction(){
+  const word* const targetlist = pgm_read_word_near(verbtargetlists+currentPage);
+  const word verbtarget = pgm_read_word_near(targetlist+currentVerb);
+
+  Serial.print("going from ");
+  Serial.print(currentPage);
+  Serial.print(" to ");
+  Serial.print(verbtarget);
+  Serial.println(".");
+  currentPage=verbtarget;
+  currentVerb=0;
+  yoffset=0;
+}
+
+// our main game loop, this runs once every cycle/frame.
+// this is where our game logic goes.
+void loop() {
+  // pause render until it's time for the next frame
+  if (!(arduboy.nextFrame()))
+    return;
+
+  arduboy.pollButtons();
+
+  if (nothingHappened()){
+    return;
+  }
+
+  bool change=false;
+  if (arduboy.pressed(UP_BUTTON)){
+    if (yoffset>0){
+      yoffset--;
+      change=true;
+    }
+  }
+  if (arduboy.pressed(DOWN_BUTTON)){
+    word lines = pgm_read_word_near(textlinecounts+currentPage);
+    if (yoffset+6<lines){
+      yoffset++;
+      change=true;
+    } 
+  }
+  if (arduboy.justPressed(LEFT_BUTTON)){
+    if (currentVerb>0){
+      currentVerb--;
+      change=true;
+    }
+  }
+  if (arduboy.justPressed(RIGHT_BUTTON)){
+    word verbcount = pgm_read_word_near(verbcounts+currentPage);
+    if (verbcount>0&&(currentVerb+1<verbcount)){
+      currentVerb++;
+      change=true;
+    }
+  }
+  if (
+    (arduboy.pressed(A_BUTTON)&&arduboy.justPressed(B_BUTTON))||
+    (arduboy.pressed(B_BUTTON)&&arduboy.justPressed(A_BUTTON)))
+    {
+      reset();
+      change=true;
+    }
+  else if (arduboy.justPressed(A_BUTTON)||arduboy.justPressed(B_BUTTON)){
+    pressAction();
+    change=true;
+  }
+  if (change){
+    render();
+  }
+}`;
+  return errors+"\n"+s;
+}
+</script>
+</head>
+<body onload="init();" dir="auto">
+<textarea name="boop" id="editor" dir="auto" rows=15 cols=40>=START=
+
+You stand between a field of sheep and a field of cows.
+
+You wonder what the cows are up to, but you can't figure it out. 
+
+Go to the cows -> cowfield
+Go to the sheep -> sheepfield
+
+=COWFIELD=
+
+Cows are rolling about.
+
+Roll with the cows -> cowfield2
+Leave this place -> start
+
+=COWFIELD2=
+
+You roll around for a bit, but you don't feel that you really fit in here.
+
+Leave this place -> start
+
+=SHEEPFIELD=
+
+Sheep are jumping up and down
+
+Jump with the sheep -> sheepfield2
+Leave this place -> start
+
+=SHEEPFIELD2=
+
+You jump up and down, just like the sheep, but however hard and long you try they still look at you differently.
+
+Leave this place -> start
+</textarea><br>
+<a href="#" onclick="doShare(); return false;">share</a><br>
+<div id="shareLinkArea"></div>
+<a href="#" onclick="doEmbed(); return false;">save to disk</a><br>
+<div id="errorArea"></div>
+</body>
+</html>
