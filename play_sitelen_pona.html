@@ -3,7 +3,7 @@
 <link rel="icon" 
       type="image/png" 
       href="favicon.png">
-<title>game</title>
+<title>musi lili</title>
 <style>
 	body {
 		margin:40px;
@@ -22,6 +22,10 @@
   textarea{
   font-family: "linja pona"  ;
     font-size:150%;
+  }
+  .ante{
+    font-size: 80%;
+    color: grey;
   }
 </style>
 <script>
@@ -122,6 +126,7 @@ function escapeHtmlEntities (str) {
 }
 
 function goTo(targetState){
+
   if (gameState==null){
     return;
   }
@@ -143,5 +148,8 @@ function goTo(targetState){
 </head>
 <body onload="init();" dir="auto">
 <div id="gameArea" dir="auto"></div>
+<!--__REMOVE_14232__--> 
+<a class="ante" href="index_sitelen_pona.html">(o ante e musi ni)</a> 
+<!--__REMOVE_OVER_41232__-->
 </body>
 </html>

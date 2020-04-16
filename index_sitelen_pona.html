@@ -3,7 +3,7 @@
 <link rel="icon" 
       type="image/png" 
       href="favicon.png">
-<title>tinychoice</title>
+<title>ilo pi musi lili</title>
 <style type="text/css">
 	@font-face {
   		font-family: "linja pona";
@@ -18,9 +18,13 @@
   textarea{
 	font-family: "linja pona"  ;
   	font-size:150%;
+
   }
   #errorArea {
     color:darkred
+  }
+  .inli_link{
+    font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif
   }
 </style>
 <script src="FileSaver.js"></script>
@@ -48,7 +52,7 @@ function getAuthURL(){
 function printUnauthorized(){
 
   var authUrl = getAuthURL();
-  var toPrint = "<a target=\"_blank\" href=\"" + authUrl + "\">Log in with Github to share</a><br>";
+  var toPrint = "<ul><li><a target=\"_blank\" href=\"" + authUrl + "\">sina wile ken pana e lipu, la o kama jo e ken pi kulupu [_ken_ijo_taso_ona]</a></ul><p>";
 
     var shareLink = document.getElementById("shareLinkArea");
     shareLink.innerHTML = toPrint;
@@ -126,7 +130,7 @@ function doShare() {
       editUrl=qualifyURL(editUrl);
 
       var shareLink = document.getElementById("shareLinkArea");
-      shareLink.innerHTML = "<ul><li><a target=\"_blank\" href=\""+playUrl+"\">"+playUrl+"</a></li><li><a target=\"_blank\" href=\""+editUrl+"\">"+editUrl+"</a><br></li></ul>";
+      shareLink.innerHTML = "<ul><li><a target=\"_blank\" href=\""+playUrl+"\">"+'o pana e musi'+"</a></li><li><a target=\"_blank\" href=\""+editUrl+"\">"+'o pana e lawa insa'+"</a><br></li></ul>";
 
 
       if (errorCount>0) {
@@ -135,7 +139,7 @@ function doShare() {
 
       } 
 
-      window.history.pushState({}, "tinychoice", "index.html?p="+id);
+      window.history.pushState({}, "tinychoice", "index_sitelen_pona.html?p="+id);
 
     }
   }
@@ -149,13 +153,15 @@ var standalone_HTML_String="";
 
 var clientStandaloneRequest = new XMLHttpRequest();
 
-clientStandaloneRequest.open('GET', 'play.html');
+clientStandaloneRequest.open('GET', 'play_sitelen_pona.html');
 clientStandaloneRequest.onreadystatechange = function() {
 
     if(clientStandaloneRequest.readyState!=4) {
       return;
     }
     standalone_HTML_String=clientStandaloneRequest.responseText;
+    standalone_HTML_String = standalone_HTML_String.replace(/__REMOVE_14232__(.|[\r\n])*?__REMOVE_OVER_41232__/g, '');
+
 }
 clientStandaloneRequest.send();
 
@@ -270,6 +276,7 @@ function doCompile(){
       }
     } else if (l[0]==='='&&l[l.length-1]==='='){
       cursection=l.substr(1,l.length-2).toUpperCase();
+      cursection=cursection.replace(/\s/g,'');
       section[cursection]=[];       
       sectionCount++;       
       if (sectionCount===1){
@@ -277,8 +284,9 @@ function doCompile(){
       }
     } else if (cursection.length>0 && l.indexOf("->")>=0){
       var index = l.indexOf("->");
-      var a = l.substr(0,index-1).trim();
+      var a = l.substr(0,index).trim();
       var b = l.substr(index+2).trim().toUpperCase();
+      b = b.replace(/\s/g,'');
       section[cursection].push([a,b]);
     } else if (cursection.length>0){
       section[cursection].push([l]);
@@ -364,6 +372,7 @@ function doEmbeddedCompile(){
       }
     } else if (l[0]==='='&&l[l.length-1]==='='){
       cursection=l.substr(1,l.length-2).toUpperCase();
+      cursection=cursecton.replace(/\s/g,'');
       section[cursection]=[];   
       sectionnames.push(cursection);    
       sectionCount++;       
@@ -375,6 +384,7 @@ function doEmbeddedCompile(){
       var index = l.indexOf("->");
       var a = l.substr(0,index-1).trim();
       var b = l.substr(index+2).trim().toUpperCase();
+      b = b.replace(/\s/g,'');
       section[cursection].push([a,b]);
     } else if (cursection.length>0){
       section[cursection].push([l]);
@@ -723,44 +733,57 @@ void loop() {
 </script>
 </head>
 <body onload="init();" dir="auto">
-<textarea name="boop" id="editor" dir="auto" rows=15 cols=40>=START=
+<textarea name="boop" id="editor" dir="auto" rows=15 cols=40 spellcheck="false">=open=
 
-You stand between a field of sheep and a field of cows.
+tenpo sunoni la sina pilin lape, la sina pali ala
 
-You wonder what the cows are up to, but you can't figure it out. 
+wile sina li seme
 
-Go to the cows -> cowfield
-Go to the sheep -> sheepfield
+o tawa ma soweli ->  ma soweli
+o tawa poka telo -> poka telo
 
-=COWFIELD=
+=ma soweli=
 
-Cows are rolling about.
+sina tawa ma soweli
+sina lukin e soweli mute
+ona li toki e ni: mu
 
-Roll with the cows -> cowfield2
-Leave this place -> start
+o luka e soweli-> luka soweli
+o moku e soweli->moku soweli
 
-=COWFIELD2=
+= lukasoweli=
 
-You roll around for a bit, but you don't feel that you really fit in here.
+sina luka e soweli, la soweli li mokue  luka sina
+ike a
 
-Leave this place -> start
+o tawa open -> open
 
-=SHEEPFIELD=
+= moku soweli=
 
-Sheep are jumping up and down
+sina toki e ni tawa sina:moku ponaa
+sina moku  soweli ala
 
-Jump with the sheep -> sheepfield2
-Leave this place -> start
+sina pilin e ni:mi wile lape kin
 
-=SHEEPFIELD2=
+o lape -> lape
 
-You jump up and down, just like the sheep, but however hard and long you try they still look at you differently.
+= lape=
 
-Leave this place -> start
-</textarea><br>
-<a href="#" onclick="doShare(); return false;">share</a><br>
+sina lape pona kin
+
+o tawa open -> open
+
+= poka telo=
+
+sina tawa linja telo.
+suno li seli,la telo li lete pona tawa luka sina.
+
+o tawa open -> open
+
+</textarea><p>
+<a href="#" onclick="doShare(); return false;">o pana e lipu ni tawa jan ante</a><br>
 <div id="shareLinkArea"></div>
-<a href="#" onclick="doEmbed(); return false;">save to disk</a><br>
+<a href="#" onclick="doEmbed(); return false;">o awen e lipu ni lon ilo sona sina</a><br>
 <div id="errorArea"></div>
 </body>
 </html>
